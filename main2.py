@@ -95,6 +95,7 @@ class Game():
         self.is_jumped = True
 
         self.is_dashed = False
+        self.is_in_dash = False
         self.last_direction = 1
         self.enable_gravity = True
 
@@ -121,7 +122,7 @@ class Game():
         self.coyote_time_jump_countdown_edge = self.coyote_time_jump_nof_frames_edge
         self.start_coyote_timer_edge = False
 
-        self.dash_cooldown_nof_frames = 60
+        self.dash_cooldown_nof_frames = 30
         self.dash_cooldown_countdown = self.dash_cooldown_nof_frames
         self.start_dash_cooldown_timer = False
 
@@ -226,17 +227,25 @@ class Game():
     def dash(self):
         if not self.start_dash_cooldown_timer:
             self.is_dashed = True
+            self.is_in_dash = True
             self.enable_gravity = False
+            # self.is_player_on_ground = True
             
             self.player_velocity.y = 0
             self.player_velocity.x = 0
-            # self.player_acceleration.y = 0
 
-            # self.player_acceleration.x = 0
+            self.k_max_speed = 300
+            self.k_friction = 20
+
+            if self.last_direction == 1:
+                self.player_velocity.x += 200
+            
+            if self.last_direction == -1:   
+                self.player_velocity.x -= 200
             
             self.start_dash_cooldown_timer = True
-            if self.is_show_debug:
-                print("Dashed")
+            # if self.is_show_debug:
+            #     print("Dashed")
     
     def death(self, play_sfx=True):
         if self.is_heart:
@@ -252,6 +261,11 @@ class Game():
         self.start_coyote_timer = False
         self.start_coyote_timer_edge = False
         self.start_dash_cooldown_timer = False
+        self.k_max_speed = 50
+        self.k_friction = 10
+        self.is_dashed = False
+        self.is_in_dash = False
+        self.enable_gravity = True
         if play_sfx:
             self.sfx_death.play()
 
@@ -388,7 +402,8 @@ class Game():
                             else:
                                 self.start_coyote_timer = True
                         if event.key == pygame.K_LSHIFT:
-                            if not self.is_dashed:
+                            # print("shift")
+                            if not self.start_dash_cooldown_timer:
                                 self.dash()
                     else:
                         self.pause_menu_action = True
@@ -531,20 +546,33 @@ class Game():
                         self.start_dash_cooldown_timer = False
                         self.dash_cooldown_countdown = self.dash_cooldown_nof_frames
                         self.is_dashed = False
+                        print("Dash restored")
 
                 # Get input keys
                 keys = pygame.key.get_pressed()
 
-                if keys[pygame.K_a]:
-                    if self.player_velocity.x > -self.k_max_speed:
-                        self.player_velocity.x -= self.k_speed
+                if not self.is_in_dash:
+                    if keys[pygame.K_a]:
+                        if self.player_velocity.x > -self.k_max_speed:
+                            self.player_velocity.x -= self.k_speed
 
-                elif keys[pygame.K_d]:
-                    if self.player_velocity.x < self.k_max_speed:
-                        self.player_velocity.x += self.k_speed
-
-                # Apply friction if the player is moving without any movement keys pressed
+                    elif keys[pygame.K_d]:
+                        if self.player_velocity.x < self.k_max_speed:
+                            self.player_velocity.x += self.k_speed
+               
+                    # Apply friction if the player is moving without any movement keys pressed
+                    else:
+                        if self.player_velocity.x > 0:
+                            self.player_velocity.x -= self.k_friction
+                            if self.player_velocity.x < 0:
+                                self.player_velocity.x = 0
+                        elif self.player_velocity.x < 0:
+                            self.player_velocity.x += self.k_friction
+                            if self.player_velocity.x > 0:
+                                self.player_velocity.x = 0
+                
                 else:
+                    # print("input blocked")
                     if self.player_velocity.x > 0:
                         self.player_velocity.x -= self.k_friction
                         if self.player_velocity.x < 0:
@@ -553,6 +581,7 @@ class Game():
                         self.player_velocity.x += self.k_friction
                         if self.player_velocity.x > 0:
                             self.player_velocity.x = 0
+
                 
                 # Limit velocity
                 if self.player_velocity.x > self.k_max_speed:
@@ -563,10 +592,25 @@ class Game():
                 # Apply horizontal velocity to change the X position
                 self.player_position.x += self.player_velocity.x * self.dt * 10
 
-                # if self.player_velocity.x = 
+                if self.player_velocity.x > 0:
+                    self.last_direction = 1
+                elif self.player_velocity.x < 0:
+                    self.last_direction = -1
 
-                if self.is_dashed and self.player_velocity.x == 0:
+                if self.is_in_dash and self.player_velocity.x == 0:
                     self.enable_gravity = True
+                    self.is_dashed = False
+                    self.is_in_dash = False
+                    self.k_max_speed = 50
+                    self.k_friction = 10
+                    # if self.is_show_debug:
+                    #     print("Gravity on")
+                
+                # if self.is_dashed:
+                #     print("Is dashed")
+                # if self.is_in_dash:
+                #     print("Is in dash")
+                
 
                 self.collision_detection_horizontal()
 
