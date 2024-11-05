@@ -66,14 +66,8 @@ class Game():
         self.sfx_next_level.set_volume(0.5)
 
         
-
-        # pygame.mixer.music.load(join(current_dir, "assets/music/press_x_twice.mp3"))
-        # pygame.mixer.music.load(join(current_dir, "assets/music/a_lil_bit.mp3"))
-        pygame.mixer.music.load(join(current_dir, "assets/music/power_walking.mp3"))
-        pygame.mixer.music.play(-1)
-        pygame.mixer.music.set_volume(0.2)
+        self.load_music(current_dir, 2)
         
-
 
         self.tile_size = 32
         self.sprite_surface = pygame.Surface((self.tile_size, self.tile_size), pygame.SRCALPHA)
@@ -100,6 +94,10 @@ class Game():
 
         self.is_jumped = True
 
+        self.is_dashed = False
+        self.last_direction = 1
+        self.enable_gravity = True
+
         self.fps = 0
         self.TARGET_FPS = 60
 
@@ -123,7 +121,11 @@ class Game():
         self.coyote_time_jump_countdown_edge = self.coyote_time_jump_nof_frames_edge
         self.start_coyote_timer_edge = False
 
-        pygame.display.set_caption("Adventures")
+        self.dash_cooldown_nof_frames = 60
+        self.dash_cooldown_countdown = self.dash_cooldown_nof_frames
+        self.start_dash_cooldown_timer = False
+
+        pygame.display.set_caption("FleaRun")
 
         self.is_paused = False
         self.menu_pressed_quit = False
@@ -143,9 +145,20 @@ class Game():
         self.empty_tile = 0
 
         self.load_next_level()
+    
+
+    def load_music(self, current_dir, track_number):
+        if track_number == 1:
+            pygame.mixer.music.load(join(current_dir, "assets/music/press_x_twice.mp3"))
+        elif track_number == 2:
+            pygame.mixer.music.load(join(current_dir, "assets/music/a_lil_bit.mp3"))
+        elif track_number == 3:
+            pygame.mixer.music.load(join(current_dir, "assets/music/power_walking.mp3"))
+
+        pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.2)
 
 
-        
     def load_next_level(self):
         # print(self.level_names_list_working, self.level_names_list)
         level_name = self.level_names_list_working.pop(0)
@@ -209,6 +222,21 @@ class Game():
         self.is_player_on_ground = False
         self.is_jumped = True
         self.sfx_jump.play()
+
+    def dash(self):
+        if not self.start_dash_cooldown_timer:
+            self.is_dashed = True
+            self.enable_gravity = False
+            
+            self.player_velocity.y = 0
+            self.player_velocity.x = 0
+            # self.player_acceleration.y = 0
+
+            # self.player_acceleration.x = 0
+            
+            self.start_dash_cooldown_timer = True
+            if self.is_show_debug:
+                print("Dashed")
     
     def death(self, play_sfx=True):
         if self.is_heart:
@@ -223,6 +251,7 @@ class Game():
         self.is_player_on_ground = False
         self.start_coyote_timer = False
         self.start_coyote_timer_edge = False
+        self.start_dash_cooldown_timer = False
         if play_sfx:
             self.sfx_death.play()
 
@@ -358,6 +387,9 @@ class Game():
                                         print("coyote edge", self.coyote_time_jump_countdown_edge)
                             else:
                                 self.start_coyote_timer = True
+                        if event.key == pygame.K_LSHIFT:
+                            if not self.is_dashed:
+                                self.dash()
                     else:
                         self.pause_menu_action = True
 
@@ -492,6 +524,13 @@ class Game():
                             self.start_coyote_timer_edge = False
                             self.coyote_time_jump_countdown_edge = self.coyote_time_jump_nof_frames_edge
 
+                ### Dash cooldown
+                if self.start_dash_cooldown_timer:
+                    self.dash_cooldown_countdown -= 1
+                    if self.dash_cooldown_countdown <= 0:
+                        self.start_dash_cooldown_timer = False
+                        self.dash_cooldown_countdown = self.dash_cooldown_nof_frames
+                        self.is_dashed = False
 
                 # Get input keys
                 keys = pygame.key.get_pressed()
@@ -524,15 +563,21 @@ class Game():
                 # Apply horizontal velocity to change the X position
                 self.player_position.x += self.player_velocity.x * self.dt * 10
 
+                # if self.player_velocity.x = 
+
+                if self.is_dashed and self.player_velocity.x == 0:
+                    self.enable_gravity = True
+
                 self.collision_detection_horizontal()
 
                 # Apply gravity
                 # if not self.is_player_on_ground or self.is_apply_gravity_always:
-                self.is_player_on_ground = False
-                self.player_velocity.y += self.k_gravity
-                # Limit fall velocity
-                if self.player_velocity.y >= self.k_terminal_velocity:
-                    self.player_velocity.y = self.k_terminal_velocity
+                if self.enable_gravity:
+                    self.is_player_on_ground = False
+                    self.player_velocity.y += self.k_gravity
+                    # Limit fall velocity
+                    if self.player_velocity.y >= self.k_terminal_velocity:
+                        self.player_velocity.y = self.k_terminal_velocity
                 
                 # Apply vertical velocity to change the Y position
                 self.player_position.y += self.player_velocity.y * self.dt * 10
