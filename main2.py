@@ -31,6 +31,8 @@ class Game():
         current_dir = dirname(__file__)
 
 
+        self.is_show_debug = True
+
         self.player_sprite_static = self.load_tile(join(current_dir, "assets/player/tile_static.png"))
         self.player_sprite_jump_static = self.load_tile(join(current_dir, "assets/player/tile_jump_static.png"))
         self.player_sprite_jump_moving = self.load_tile(join(current_dir, "assets/player/tile_jump_moving.png"))
@@ -327,7 +329,8 @@ class Game():
                     self.is_running = False
                     pygame.mixer.music.stop()
                     pygame.time.wait(500)
-                    print("Shut down.")
+                    if self.is_show_debug:
+                        print("Shut down.")
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         if self.is_paused:
@@ -337,7 +340,8 @@ class Game():
                         else:
                             self.is_paused = True
                             self.sfx_menu_enter.play()
-                            print("Pause")
+                            if self.is_show_debug:
+                                print("Pause")
                             pygame.mixer.music.set_volume(0.05)
                     if not self.is_paused:
                         if event.key == pygame.K_r:
@@ -350,7 +354,8 @@ class Game():
                                     self.jump()
                                 elif self.start_coyote_timer_edge:
                                     self.jump()
-                                    print("coyote edge", self.coyote_time_jump_countdown_edge)
+                                    if self.is_show_debug:
+                                        print("coyote edge", self.coyote_time_jump_countdown_edge)
                             else:
                                 self.start_coyote_timer = True
                     else:
@@ -384,13 +389,15 @@ class Game():
                             self.sfx_menu_select.play()
                             self.is_paused = False
                             pygame.mixer.music.set_volume(0.2)
-                            print("Unpause")
+                            if self.is_show_debug:
+                                print("Unpause")
                         elif self.menu_pressed_quit:
                             self.is_running = False
                             self.sfx_quit.play()
                             pygame.mixer.music.stop()
                             pygame.time.wait(500)
-                            print("Shut down.")
+                            if self.is_show_debug:
+                                print("Shut down.")
                     else:
                         if self.menu_pressed_resume:
                             self.menu_select_surface.blit(self.misc_sprite_menu_select, (self.SCREEN_WIDTH / 2 - self.resume.get_width() / 2 - 64, self.SCREEN_HEIGHT / 5 + self.resume.get_height() * 0.2))
@@ -463,7 +470,8 @@ class Game():
                 ### Coyote time on landing
                 if self.start_coyote_timer:
                     if self.is_player_on_ground:
-                        print("coyote landing", self.coyote_time_jump_countdown)
+                        if self.is_show_debug:
+                            print("coyote landing", self.coyote_time_jump_countdown)
                         self.jump()
                         self.start_coyote_timer = False
                         self.coyote_time_jump_countdown = self.coyote_time_jump_nof_frames
