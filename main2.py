@@ -64,6 +64,8 @@ class Game():
         self.sfx_menu_enter.set_volume(0.5)
         self.sfx_next_level = pygame.mixer.Sound(join(current_dir, "assets/sfx/next_level_6.wav"))
         self.sfx_next_level.set_volume(0.5)
+        self.sfx_dash = pygame.mixer.Sound(join(current_dir, "assets/sfx/slide.wav"))
+        self.sfx_dash.set_volume(0.6)
 
         
         self.load_music(current_dir, 2)
@@ -244,6 +246,8 @@ class Game():
                 self.player_velocity.x -= 200
             
             self.start_dash_cooldown_timer = True
+
+            self.sfx_dash.play()
             # if self.is_show_debug:
             #     print("Dashed")
     
@@ -546,7 +550,7 @@ class Game():
                         self.start_dash_cooldown_timer = False
                         self.dash_cooldown_countdown = self.dash_cooldown_nof_frames
                         self.is_dashed = False
-                        print("Dash restored")
+                        # print("Dash restored")
 
                 # Get input keys
                 keys = pygame.key.get_pressed()
