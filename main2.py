@@ -19,7 +19,7 @@ class Game():
         self.player_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.score_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.menu_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
-        self.menu_surface.fill((0, 0, 0, 127))
+        self.menu_surface.fill((0, 0, 0, 220))
         self.menu_select_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         
 
@@ -108,7 +108,8 @@ class Game():
 
         self.font = pygame.font.Font(join(current_dir, "assets/fonts/Pono_048.ttf"), 80)
         self.font_menu = pygame.font.Font(join(current_dir, "assets/fonts/Pono_048.ttf"), 64)
-        self.score_font = pygame.font.Font(join(current_dir, "assets/fonts/Pono_048.ttf"), 32)
+        self.font_score = pygame.font.Font(join(current_dir, "assets/fonts/Pono_048.ttf"), 32)
+        self.font_tutorial = pygame.font.Font(join(current_dir, "assets/fonts/Pono_048.ttf"), 48)
 
         self.score = 0
 
@@ -188,7 +189,7 @@ class Game():
         
         if level_name == "main_screen":
             self.load_level(join(current_dir, "assets/levels2/lvl2_0.json"))
-            creator_text = self.font.render("Created by g0fher", True, (255, 255, 255))
+            creator_text = self.font.render("FleaRun by g0fher", True, (255, 255, 255))
             self.level_surface.blit(creator_text, (self.SCREEN_WIDTH / 2 - creator_text.get_width() / 2, self.SCREEN_HEIGHT / 5))
         elif level_name == "lvl_1":
             self.load_level(join(current_dir, "assets/levels2/lvl2_1.json"))
@@ -228,7 +229,7 @@ class Game():
 
     def render_score(self):
         self.score_surface.fill((0, 0, 0, 0))
-        score_text = self.score_font.render(f"Score: {self.score}", True, (255, 255, 255))
+        score_text = self.font_score.render(f"Score: {self.score}", True, (255, 255, 255))
         self.score_surface.blit(score_text, (10, 10))
 
     def jump(self):
@@ -381,6 +382,12 @@ class Game():
         self.menu_surface.blit(self.resume, (self.SCREEN_WIDTH / 2 - self.resume.get_width() / 2, self.SCREEN_HEIGHT / 5))
         self.menu_surface.blit(self.quit, (self.SCREEN_WIDTH / 2 - self.quit.get_width() / 2, self.SCREEN_HEIGHT / 5 + self.font_menu.get_height() * 1.2))
 
+        self.tutorial_1 = self.font_tutorial.render("WASD-move, SPACE-jump, SHIFT-dash, ESC-pause", True, (255, 255, 255))
+        self.tutorial_2 = self.font_tutorial.render("R to reset, M to cycle music", True, (255, 255, 255))
+        self.menu_surface.blit(self.tutorial_1, (self.SCREEN_WIDTH / 2 - self.tutorial_1.get_width() / 2, self.SCREEN_HEIGHT / 2))
+        self.menu_surface.blit(self.tutorial_2, (self.SCREEN_WIDTH / 2 - self.tutorial_2.get_width() / 2, self.SCREEN_HEIGHT / 2 + self.font_tutorial.get_height() * 1.2))
+
+
     def run(self):
         while self.is_running:
             for event in pygame.event.get():
@@ -427,6 +434,8 @@ class Game():
                         self.pause_menu_action = True
 
                         self.menu_pressed_confirm = False
+                        if event.key == pygame.K_m:
+                            self.cycle_music()
                         if event.key == pygame.K_s:
                             if not self.menu_pressed_quit:
                                 self.sfx_menu.play()
