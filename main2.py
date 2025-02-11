@@ -17,7 +17,7 @@ class Game():
         self.level_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.environment_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.player_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
-        self.ui_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.score_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.menu_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.menu_surface.fill((0, 0, 0, 127))
         self.menu_select_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -68,7 +68,9 @@ class Game():
         self.sfx_dash.set_volume(0.6)
 
         
-        self.load_music(current_dir, 2)
+        self.load_music(2)
+        self.current_track = 2
+        self.max_music_tracks = 3
         
 
         self.tile_size = 32
@@ -106,6 +108,7 @@ class Game():
 
         self.font = pygame.font.Font(join(current_dir, "assets/fonts/Pono_048.ttf"), 80)
         self.font_menu = pygame.font.Font(join(current_dir, "assets/fonts/Pono_048.ttf"), 64)
+        self.score_font = pygame.font.Font(join(current_dir, "assets/fonts/Pono_048.ttf"), 32)
 
         self.score = 0
 
@@ -150,7 +153,14 @@ class Game():
         self.load_next_level()
     
 
-    def load_music(self, current_dir, track_number):
+    def cycle_music(self):
+        self.current_track += 1
+        if self.current_track > self.max_music_tracks:
+            self.current_track = 1
+        
+        self.load_music(self.current_track)
+
+    def load_music(self, track_number, current_dir=dirname(__file__)):
         if track_number == 1:
             pygame.mixer.music.load(join(current_dir, "assets/music/press_x_twice.mp3"))
         elif track_number == 2:
@@ -166,6 +176,7 @@ class Game():
         # print(self.level_names_list_working, self.level_names_list)
         level_name = self.level_names_list_working.pop(0)
         if level_name == "end":
+            self.score = 0
             self.level_names_list_working = self.level_names_list.copy()
             level_name = self.level_names_list_working.pop(0)
             self.load_level_by_name(level_name)
@@ -216,15 +227,16 @@ class Game():
         return image
 
     def render_score(self):
-        self.ui_surface.fill((0, 0, 0, 0))
-        score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
-        self.ui_surface.blit(score_text, (10, 10))
+        self.score_surface.fill((0, 0, 0, 0))
+        score_text = self.score_font.render(f"Score: {self.score}", True, (255, 255, 255))
+        self.score_surface.blit(score_text, (10, 10))
 
     def jump(self):
         self.player_velocity.y += -200
         self.is_player_on_ground = False
         self.is_jumped = True
         self.sfx_jump.play()
+        self.score += 1
 
     def dash(self):
         if not self.start_dash_cooldown_timer:
@@ -393,6 +405,8 @@ class Game():
                     if not self.is_paused:
                         if event.key == pygame.K_r:
                             self.death()
+                        if event.key == pygame.K_m:
+                            self.cycle_music()
                         if event.key == pygame.K_SPACE:
                             if not self.is_jumped:
                                 # if self.is_player_on_ground or self.start_coyote_timer_edge:
@@ -695,6 +709,8 @@ class Game():
                 self.screen.blit(self.level_surface, (0, 0))
                 self.screen.blit(self.player_surface, (0, 0))
 
+                self.render_score()
+                self.screen.blit(self.score_surface, (0, 0))
 
             pygame.display.update()
 
