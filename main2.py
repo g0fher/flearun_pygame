@@ -18,6 +18,7 @@ class Game():
         self.environment_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.player_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.score_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
+        self.timer_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.menu_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.menu_surface.fill((0, 0, 0, 220))
         self.menu_select_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -54,7 +55,7 @@ class Game():
 
         self.sfx_death = pygame.mixer.Sound(join(current_dir, "assets/sfx/death_3.wav"))
         self.sfx_jump = pygame.mixer.Sound(join(current_dir, "assets/sfx/jump_4.wav"))
-        self.sfx_jump.set_volume(0.6)
+        self.sfx_jump.set_volume(0.5)
         self.sfx_menu_select = pygame.mixer.Sound(join(current_dir, "assets/sfx/menu_select.wav"))
         self.sfx_menu_select.set_volume(0.7)
         self.sfx_menu = pygame.mixer.Sound(join(current_dir, "assets/sfx/menu.wav"))
@@ -97,6 +98,8 @@ class Game():
         self.gravity = 10
 
         self.is_jumped = True
+        self.is_double_jump = False
+        self.is_used_double_jump = False
 
         self.is_dashed = False
         self.is_in_dash = False
@@ -112,6 +115,7 @@ class Game():
         self.font_tutorial = pygame.font.Font(join(current_dir, "assets/fonts/Pono_048.ttf"), 48)
 
         self.score = 0
+        self.timer = 0.0
 
 
         self.k_speed = 15
@@ -178,6 +182,7 @@ class Game():
         level_name = self.level_names_list_working.pop(0)
         if level_name == "end":
             self.score = 0
+            self.timer = 0.0
             self.level_names_list_working = self.level_names_list.copy()
             level_name = self.level_names_list_working.pop(0)
             self.load_level_by_name(level_name)
@@ -231,13 +236,23 @@ class Game():
         self.score_surface.fill((0, 0, 0, 0))
         score_text = self.font_score.render(f"Score: {self.score}", True, (255, 255, 255))
         self.score_surface.blit(score_text, (10, 10))
+    
+    def render_timer(self):
+        self.timer_surface.fill((0, 0, 0, 0))
+        timer_text = self.font_score.render(f"{round(self.timer, 2):.2f}", True, (255, 255, 255))
+        self.timer_surface.blit(timer_text, (self.SCREEN_WIDTH / 2 - timer_text.get_width() / 2, 10))
 
     def jump(self):
-        self.player_velocity.y += -200
-        self.is_player_on_ground = False
-        self.is_jumped = True
-        self.sfx_jump.play()
-        self.score += 1
+        if not self.is_dashed:
+            if self.player_velocity.y > 0:
+                self.player_velocity.y = 0
+            self.player_velocity.y += -200
+            if self.player_velocity.y < -200:
+                self.player_velocity.y = -200
+            self.is_player_on_ground = False
+            self.is_jumped = True
+            self.sfx_jump.play()
+            self.score += 1
 
     def dash(self):
         if not self.start_dash_cooldown_timer:
@@ -305,6 +320,7 @@ class Game():
                     self.player_position.y = collision_box.top - 32
                     self.player_velocity.y = 0
                     self.is_jumped = False
+                    self.is_used_double_jump = False
                     self.is_player_on_ground = True
                 elif self.player_velocity.y < 0:
                     self.player_position.y = collision_box.bottom
@@ -414,18 +430,32 @@ class Game():
                             self.death()
                         if event.key == pygame.K_m:
                             self.cycle_music()
+                        if event.key == pygame.K_j:
+                            print("turned on/off wings")
+                            self.is_double_jump = not self.is_double_jump
                         if event.key == pygame.K_SPACE:
                             if not self.is_jumped:
                                 # if self.is_player_on_ground or self.start_coyote_timer_edge:
                                 #     self.jump()
                                 if self.is_player_on_ground:
                                     self.jump()
+                                    # print("jump1")
+                                elif (not self.is_player_on_ground) and self.is_double_jump and (not self.is_used_double_jump):
+                                    self.is_used_double_jump = True
+                                    self.jump()
+                                    print("wings down")
                                 elif self.start_coyote_timer_edge:
                                     self.jump()
+                                    # print("jump2")
                                     if self.is_show_debug:
                                         print("coyote edge", self.coyote_time_jump_countdown_edge)
                             else:
                                 self.start_coyote_timer = True
+                                if self.is_double_jump and not self.is_used_double_jump:
+                                    self.is_used_double_jump = True
+                                    print("wings double")
+                                    self.jump()
+    
                         if event.key == pygame.K_LSHIFT:
                             # print("shift")
                             if not self.start_dash_cooldown_timer:
@@ -720,6 +750,11 @@ class Game():
 
                 self.render_score()
                 self.screen.blit(self.score_surface, (0, 0))
+                self.timer += self.dt
+                self.render_timer()
+                self.screen.blit(self.timer_surface, (0, 0))
+
+                # print(self.player_velocity.y)
 
             pygame.display.update()
 
