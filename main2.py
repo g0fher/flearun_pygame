@@ -17,11 +17,13 @@ class Game():
         self.dt = 0.0
         self.is_running = True
         self.fps = 0
+        # Change at your own risk (don't)
         self.TARGET_FPS = 60
 
-        current_dir = dirname(__file__)
         # 0 - for no debug, 1 - for special action, 2 - for most being shown
         self.debug_level = 1
+
+        current_dir = dirname(__file__)
 
         # Loading sound effects
         self.sfx_death = pygame.mixer.Sound(join(current_dir, "assets/sfx/death_3.wav"))
@@ -144,7 +146,7 @@ class Game():
 
         self.render_pause_menu()
 
-        self.level_names_list = ["main_screen", "lvl_1", "lvl_2", "lvl_3", "lvl_4", "end"]
+        self.level_names_list = ["main_screen", "lvl_1", "lvl_2", "lvl_3", "end"]
         self.level_names_list_working = self.level_names_list.copy()
 
         self.heart_tile_number = 41
@@ -215,7 +217,11 @@ class Game():
             level_name = self.level_names_list_working.pop(0)
             self.load_level_by_name(level_name)
         else:
-            self.load_level_by_name(level_name)
+            try:
+                self.load_level_by_name(level_name)
+            except:
+                print(f"No level with name {level_name}, loading next level")
+                self.load_next_level()
 
     def load_level_by_name(self, level_name, current_dir=dirname(__file__)):
         if self.debug_level >= 1:
@@ -378,6 +384,9 @@ class Game():
         # Bassically the death is triggered between the levels
         if play_sfx:
             self.sfx_death.play()
+        
+        if self.debug_level >= 1:
+            print("Death")
 
     def collision_detection_horizontal(self):
         player_rect = pygame.Rect(self.player_position.x, self.player_position.y, self.tile_size, self.tile_size)
@@ -409,6 +418,8 @@ class Game():
         for collision_box in self.spikes:
             if player_rect.colliderect(collision_box):
                 self.death()
+                if self.debug_level >= 2:
+                    print("Collided with spikes")
 
     def run(self):
         while self.is_running:
@@ -659,6 +670,7 @@ class Game():
                                 self.player_velocity.x = 0
                 
                 else:
+                    # Yes it's the same code
                     if self.player_velocity.x > 0:
                         self.player_velocity.x -= self.friction
                         if self.player_velocity.x < 0:
@@ -698,6 +710,8 @@ class Game():
 
                 # Apply gravity
                 if self.enable_gravity:
+                    # The player must always fall first, and then be lifted up again
+                    # If it's not done, the game can't detect when he stepped of the platform
                     self.is_player_on_ground = False
                     self.player_velocity.y += self.gravity_force
                     # Limit fall velocity
@@ -709,86 +723,46 @@ class Game():
 
                 self.collision_detection_vertical()
 
-
+                # This happens when the player has just stepped of the platform
                 if self.previous_is_player_on_ground and not self.is_player_on_ground:
-                    # start coyote edge timer
                     self.start_coyote_timer_edge = True
-
                 self.previous_is_player_on_ground = self.is_player_on_ground
 
-                self.spikes_collision()
-
-                # if player_rect.colliderect(self.basic_floor):
-                #     if self.player_velocity.y >  0:
-                #         self.player_position.y = self.basic_floor.top - 32
-                #         self.player_velocity.y = 0
-                #         self.is_jumped = False
-                #         self.is_player_on_ground = True
-                #         # print("on ground")
-
-                # self.check_collision_player(player_rect)
-
-                # self.collision(player_rect, self.basic_floor)
-                # self.collision(player_rect, self.basic_floor_2)                
+                self.spikes_collision()          
                     
-                player_rect = pygame.Rect(self.player_position.x, self.player_position.y, 32, 32)
+                player_rect = pygame.Rect(self.player_position.x, self.player_position.y, self.tile_size, self.tile_size)
                 if self.is_door:
                     if player_rect.colliderect(self.door_rect):
                         self.load_next_level()
                         self.death(play_sfx=False)
                         self.sfx_next_level.play()
-                        # print("door")
+                        if self.debug_level >= 2:
+                            print("Collided with the door")
 
                 # Prevent player from going offscreen
                 if self.player_position.y > self.SCREEN_HEIGHT or self.player_position.y < 0 or self.player_position.x > self.SCREEN_WIDTH or self.player_position.x < 0 - 32:
                     self.death()
 
+                self.screen.fill((0, 0, 0, 0))
 
-                self.screen.fill((0, 0, 0))
+                # Draw the player (the correct sprite is already drawn on the sprite surface)
                 self.player_surface.fill((0, 0, 0, 0))
-
-                # Draw the player
-                # if self.player_velocity.x != 0:
-                #     pass
-                # self.player_surface.blit(self.player_sprite_static, self.player_position)
                 self.player_surface.blit(self.sprite_surface, self.player_position)
 
-                # self.environment_surface.fill((10, 5, 15, 0))
-
-                # if player_rect.colliderect(self.basic_floor):
-                #     pygame.draw.rect(self.environment_surface, (128, 128, 128), self.basic_floor)
-                # else:
-
-                # collision boxes debug
-                # for box in self.collision_boxes:
-                #     # box_rect = pygame.Rect(box[0], box[1], box[2], box[3])
-                #     pygame.draw.rect(self.environment_surface, (255, 255, 255, 100), box)
-
-                # pygame.draw.rect(self.environment_surface, (255, 255, 255), self.basic_floor)
-
-                # pygame.draw.rect(self.environment_surface, (255, 255, 255), self.basic_floor_2)
-                
-                # self.screen.blit(self.environment_surface, (0, 0))
                 self.screen.blit(self.level_surface, (0, 0))
                 self.screen.blit(self.player_surface, (0, 0))
 
                 self.render_score()
                 self.screen.blit(self.score_surface, (0, 0))
+
                 self.timer += self.dt
                 self.render_timer()
                 self.screen.blit(self.timer_surface, (0, 0))
 
-                # print(self.player_velocity.y)
-
             pygame.display.update()
 
-            # Get time between frames in seconds
-            # Fix fps to target fps
+            # Get time between frames in seconds & fix fps to target fps
             self.dt = self.clock.tick(self.TARGET_FPS) / 1000
-            # print(self.dt)
-
-            # self.fps = self.clock.get_fps()
-            # print(self.fps)
 
         pygame.quit()
 
