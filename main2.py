@@ -146,7 +146,7 @@ class Game():
 
         self.render_pause_menu()
 
-        self.level_names_list = ["main_screen", "lvl_1", "lvl_2", "lvl_3", "end"]
+        self.level_names_list = ["main_screen", "lvl_1", "lvl_2", "lvl_3", "lvl_4", "end"]
         self.level_names_list_working = self.level_names_list.copy()
 
         self.heart_tile_number = 41
